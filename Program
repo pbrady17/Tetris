@@ -1,0 +1,113 @@
+#################################### Tetris ####################################
+
+from tkinter import*
+import random
+
+def init(data):
+	data["boxSize"] = 25
+    data["row"] = 10
+    data["col"] = 15
+    data["start"] = [1,4]
+    data["tetrisPieces"] = [[
+    [ True,  True,  True,  True]
+  ], [
+    [ True, False, False ],
+    [ True, True,  True]
+  ], [
+    [ False, False, True],
+    [ True,  True,  True]
+  ], [
+    [ True, True],
+    [ True, True]
+  ], [
+    [ False, True, True],
+    [ True,  True, False ]
+  ], [
+    [ False, True, False ],
+    [ True,  True, True]
+  ], [
+    [ True,  True, False ],
+    [ False, True, True]
+  ]]
+    data["tetrisPieceColor"] = ["red", "yellow", "magenta", "pink", "cyan", "green", "orange"]
+    data["fallingPiece"] = ""
+    data["fallingPieceColor"] = ""
+    data["boardFill"] = ""
+    data["board"] = ""
+
+def redrawAll(canvas, data):
+    buildGrid(canvas, data)
+
+def buildGrid(canvas, data):
+    boxSize = data["boxSize"]
+    boardHeight = data["col"]
+    boardWidth = data["row"]
+    boxIndex = 0
+    for row in range(1, boardHeight):
+        for col in range(1, boardWidth):
+            color = data["board"][(row, col)]
+            canvas.create_rectangle(col*boxSize, row*boxSize,
+                                    col*boxSize + boxSize, row*boxSize+boxSize,
+                                    fill = color, outline = "black", width = 2)
+                                    
+def board(data):
+    col = data["col"]
+    row = data["row"]
+    d = dict()
+    for i in range(1, col + 1):
+        for x in range(1, row + 1):
+            d[(i, x)] = "white"
+    data["board"] = d
+
+def fallingPiece(data):
+    z = random.randint(0,6)
+    data["fallingPiece"] = (data["tetrisPieces"])[z]
+    data["fallingPieceColor"] = data["tetrisPieceColor"][z]
+    piece = data["fallingPiece"]
+    color = data["fallingPieceColor"]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(piece[i][x] == True):
+                (data["board"])[((data["start"][0] + i), (data["start"][1] + x))] = color
+
+
+
+############################## Run Function ####################################
+
+def run(width=300, height=300):
+    def redrawAllWrapper(canvas, data):
+        canvas.delete(ALL)
+        redrawAll(canvas, data)
+        canvas.update()    
+    # def mousePressedWrapper(event, canvas, data):
+    #     mousePressed(event, data)
+    #     redrawAllWrapper(canvas, data)
+    # def keyPressedWrapper(event, canvas, data):
+    #     keyPressed(event, data)
+    #     redrawAllWrapper(canvas, data)
+    # def timerFiredWrapper(canvas, data):
+    #     timerFired(data)
+    #     redrawAllWrapper(canvas, data)
+    #     canvas.after(data["timerDelay"], timerFiredWrapper, canvas, data)
+    data = dict()
+    data["width"] = width
+    data["height"] = height
+    data["timerDelay"] = 100
+    init(data)
+    root = Tk()
+    canvas = Canvas(root, width=data["width"], height=data["height"])
+    canvas.pack()
+    canvas.xview_moveto(0)
+    canvas.yview_moveto(0)
+    board(data)
+    fallingPiece(data)
+    redrawAll(canvas, data)
+    # root.bind("<Button-1>", lambda event:
+    #                         mousePressedWrapper(event, canvas, data))
+    # root.bind("<Key>", lambda event:
+    #                         keyPressedWrapper(event, canvas, data))
+    # timerFiredWrapper(canvas, data)
+    root.mainloop()  
+    print("bye!")
+
+run(250, 375)
