@@ -4,18 +4,18 @@ from tkinter import*
 import random
 
 def init(data):
-	data["boxSize"] = 25
+    data["boxSize"] = 25
     data["row"] = 10
     data["col"] = 15
-    data["start"] = [1,4]
+    data["start"] = ""
     data["tetrisPieces"] = [[
     [ True,  True,  True,  True]
   ], [
-    [ True, False, False ],
-    [ True, True,  True]
+    [ True, True, True ],
+    [ False, False,  True]
   ], [
-    [ False, False, True],
-    [ True,  True,  True]
+    [ True, True, True],
+    [ True, False,  False]
   ], [
     [ True, True],
     [ True, True]
@@ -29,8 +29,8 @@ def init(data):
     [ True,  True, False ],
     [ False, True, True]
   ]]
-    data["tetrisPieceColor"] = ["red", "yellow", "magenta", "pink", "cyan", "green", "orange"]
-    data["fallingPiece"] = ""
+    data["tetrisPieceColor"] = ["red", "yellow", "magenta", "blue", "cyan", "green", "orange"]
+    data["newFallingPiece"] = ""
     data["fallingPieceColor"] = ""
     data["boardFill"] = ""
     data["board"] = ""
@@ -49,7 +49,12 @@ def buildGrid(canvas, data):
             canvas.create_rectangle(col*boxSize, row*boxSize,
                                     col*boxSize + boxSize, row*boxSize+boxSize,
                                     fill = color, outline = "black", width = 2)
-                                    
+
+def start(data):
+    row = 1
+    col = (data["row"] // 2) - (len(data["newFallingPiece"][0]) // 2)
+    data["start"] = [row, col]
+
 def board(data):
     col = data["col"]
     row = data["row"]
@@ -59,20 +64,59 @@ def board(data):
             d[(i, x)] = "white"
     data["board"] = d
 
-def fallingPiece(data):
+def newFallingPiece(data):
     z = random.randint(0,6)
-    data["fallingPiece"] = (data["tetrisPieces"])[z]
+    data["newFallingPiece"] = (data["tetrisPieces"])[z]
     data["fallingPieceColor"] = data["tetrisPieceColor"][z]
-    piece = data["fallingPiece"]
+
+def drawFallingPiece(data):
+    piece = data["newFallingPiece"]
     color = data["fallingPieceColor"]
     for i in range(len(piece)):
         for x in range(len(piece[i])):
             if(piece[i][x] == True):
                 (data["board"])[((data["start"][0] + i), (data["start"][1] + x))] = color
 
+def keyPressed(event, data):
+    if(event.keysym == "Right"):
+        board(data)
+        if(data["start"][1] + len(data["newFallingPiece"][0]) < data["row"]):
+            data["start"][1] += 1
+        drawFallingPiece(data)
+    if(event.keysym == "Left"):
+        board(data)
+        if(data["start"][1] > 1):
+            data["start"][1] -= 1
+        drawFallingPiece(data)
+    if(event.keysym == "Down"):
+        board(data)
+        if(data["start"][0] + len(data["newFallingPiece"]) < data["col"]):
+            data["start"][0] += 1
+        drawFallingPiece(data)
+    if(event.keysym == "Up"):
+        board(data)
+        data["newFallingPiece"] = transpose(data)
+        drawFallingPiece(data)
+    if(event.keysym == "r"):
+        board(data)
+        newFallingPiece(data)
+        start(data)
+        drawFallingPiece(data)
+
+def transpose(data):
+    piece = data["newFallingPiece"]
+    newList = [ ]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(i == 0):
+                newList.append([piece[i][x]])
+            if(i >= 1):
+                newList[x].append(piece[i][x])
+    return newList
 
 
 ############################## Run Function ####################################
+
 
 def run(width=300, height=300):
     def redrawAllWrapper(canvas, data):
@@ -82,9 +126,9 @@ def run(width=300, height=300):
     # def mousePressedWrapper(event, canvas, data):
     #     mousePressed(event, data)
     #     redrawAllWrapper(canvas, data)
-    # def keyPressedWrapper(event, canvas, data):
-    #     keyPressed(event, data)
-    #     redrawAllWrapper(canvas, data)
+    def keyPressedWrapper(event, canvas, data):
+        keyPressed(event, data)
+        redrawAllWrapper(canvas, data)
     # def timerFiredWrapper(canvas, data):
     #     timerFired(data)
     #     redrawAllWrapper(canvas, data)
@@ -100,14 +144,16 @@ def run(width=300, height=300):
     canvas.xview_moveto(0)
     canvas.yview_moveto(0)
     board(data)
-    fallingPiece(data)
+    newFallingPiece(data)
+    start(data)
+    drawFallingPiece(data)
     redrawAll(canvas, data)
     # root.bind("<Button-1>", lambda event:
     #                         mousePressedWrapper(event, canvas, data))
-    # root.bind("<Key>", lambda event:
-    #                         keyPressedWrapper(event, canvas, data))
+    root.bind("<Key>", lambda event:
+                            keyPressedWrapper(event, canvas, data))
     # timerFiredWrapper(canvas, data)
     root.mainloop()  
     print("bye!")
 
-run(250, 375)
+run(275, 400)
