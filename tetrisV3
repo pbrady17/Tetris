@@ -1,0 +1,316 @@
+#################################### Tetris ####################################
+
+from tkinter import*
+import random
+
+def init(data):
+    data["boxSize"] = 25
+    data["row"] = 10
+    data["col"] = 15
+    data["start"] = ""
+    data["tetrisPieces"] = [[
+
+    [ True,  True,  True,  True]
+  ], [
+    [ True, True, True ],
+    [ False, False,  True]
+  ], [
+    [ True, True, True],
+    [ True, False,  False]
+  ], [
+    [ True, True],
+    [ True, True]
+  ], [
+    [ False, True, True],
+    [ True,  True, False ]
+  ], [
+    [ False, True, False ],
+    [ True,  True, True]
+  ], [
+    [ True,  True, False ],
+    [ False, True, True]
+  ]]
+    data["tetrisPieceColor"] = ["red", "yellow", "magenta", "blue", "cyan", "green", "orange"]
+    data["newFallingPiece"] = ""
+    data["fallingPieceColor"] = ""
+    data["boardFill"] = ""
+    data["board"] = ""
+    data["stuckPieces"] = dict()
+    data["boardList"] = [ ]
+    data["newRow"] = ["white", "white", "white", "white", "white", "white", "white", "white", "white", "white"]
+    data["score"] = 0
+    data["rotateCount"] = 0
+
+def redrawAll(canvas, data):
+    buildGrid(canvas, data)
+    drawStuckPieces(canvas, data)
+
+def buildGrid(canvas, data):
+    boxSize = data["boxSize"]
+    boardHeight = data["col"]
+    boardWidth = data["row"]
+    boxIndex = 0
+    for row in range(1, boardHeight):
+        for col in range(1, boardWidth):
+            color = data["board"][(row, col)]
+            canvas.create_rectangle(col*boxSize, row*boxSize,
+                                    col*boxSize + boxSize, row*boxSize+boxSize,
+                                    fill = color, outline = "black", width = 2)
+
+def drawStuckPieces(canvas, data):
+    stuckPieces = data["stuckPieces"]
+
+    # for piece in stuckPieces:
+    #     for i in range(len(piece)):
+    #         for x in range(len(piece[i])):
+    #             if(piece[i][x] == True):
+    #                 (data["board"])[((data["start"][0] + i), (data["start"][1] + x))] = color
+
+def start(data):
+    row = 1
+    col = (data["row"] // 2) - (len(data["newFallingPiece"][0]) // 2)
+    data["start"] = [row, col]
+
+def board(data):
+    col = data["col"]
+    row = data["row"]
+    d = dict()
+    for i in range(1, col + 1):
+        for x in range(1, row + 1):
+            if (i, x) in data["stuckPieces"]:
+                d[(i, x)] = data["stuckPieces"][(i, x)]
+            else:
+                d[(i, x)] = "white"
+    data["board"] = d
+
+def newFallingPiece(data):
+    z = random.randint(0,6)
+    data["newFallingPiece"] = (data["tetrisPieces"])[z]
+    data["fallingPieceColor"] = data["tetrisPieceColor"][z]
+    data["rotateCount"] = 0
+    data["basePiece"] = data["newFallingPiece"]
+
+def drawFallingPiece(data):
+    piece = data["newFallingPiece"]
+    color = data["fallingPieceColor"]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(piece[i][x] == True):
+                (data["board"])[((data["start"][0] + i), (data["start"][1] + x))] = color
+
+def keyPressed(event, data):
+    if(event.keysym == "Right"):
+        collision(data)
+        board(data)
+        if(data["start"][1] + len(data["newFallingPiece"][0]) < data["row"]):
+            data["start"][1] += 1
+        drawFallingPiece(data)
+    if(event.keysym == "Left"):
+        collision(data)
+        board(data)
+        if(data["start"][1] > 1):
+            data["start"][1] -= 1
+        drawFallingPiece(data)
+    if(event.keysym == "Down"):
+        collision(data)
+        board(data)
+        if(data["start"][0] + len(data["newFallingPiece"]) < data["col"]) and (data["start"][0]):
+            data["start"][0] += 1
+        drawFallingPiece(data)
+    if(event.keysym == "Up"):
+        collision(data)
+        board(data)
+        data["newFallingPiece"] = rotate(data)
+        # if(data["start"][1] + len(data["newFallingPiece"][0]) > data["row"]):
+        #     data["start"][1] = data["start"][1] - (data["start"][1] + len(data["newFallingPiece"][0]) - data["row"])
+        drawFallingPiece(data)
+        data["rotateCount"] += 1
+
+
+    if(event.keysym == "r"):
+        board(data)
+        newFallingPiece(data)
+        start(data)
+        drawFallingPiece(data)
+
+def timerFired(data):
+    data["start"][0] += 1
+    collision(data)
+    board(data)
+    drawFallingPiece(data)
+
+def rotate(data):
+    rotateCount = data["rotateCount"] % 4
+    piece = data["basePiece"]
+    oldRow = data["start"][0]
+    oldCol = data["start"][1]
+    oldWidth = len(data["newFallingPiece"][0])
+    oldHeight = len(data["newFallingPiece"])
+
+    newList = [ ]
+
+    if (rotateCount == 0):
+        newList = transpose(data, piece)
+        newList = flip(newList)
+    elif (rotateCount == 1):
+        newList = mirror(piece)
+        newList = flip(newList)
+    elif (rotateCount == 2):
+        newList = transpose(data, piece)
+        newList = mirror(newList)
+    elif (rotateCount == 3):
+        newList = piece
+    print(data["newFallingPiece"])
+    print(newList)
+
+    newWidth = len(newList[0])
+    newHeight = len(newList)    
+
+    oldCenterY = oldRow + oldHeight/2
+    oldCenterX = oldCol + oldWidth/2
+
+    newRow = oldCenterY - newHeight/2
+    newCol = oldCenterX - newWidth/2
+
+    offsetY = int(newRow - oldRow)
+    offsetX = int(newCol - oldCol)
+
+    data["start"][0] += offsetY
+    data["start"][1] += offsetX
+
+
+    return newList
+
+
+def transpose(data, piece):
+    rotateCount = data["rotateCount"] % 4
+    piece = data["basePiece"]
+    newList = [ ]
+
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(i == 0):
+                newList.append([ ])
+            newList[x].append(piece[i][x])
+    return newList
+
+def flip(piece):
+    newList = piece[::-1]
+    return newList    
+
+
+def mirror(piece):
+    newList = [ ]
+
+    for row in range(len(piece)):
+        newRow = piece[row][::-1]
+        newList.append(newRow)
+    return newList
+
+def collision(data):
+    row, col = data["start"]
+    key = (row, col)
+    if(offGrid(data)):
+        stickPiece(data)
+        newFallingPiece(data)
+        drawFallingPiece(data)
+    else:
+        piece = data["newFallingPiece"]
+        color = data["fallingPieceColor"]
+
+        for i in range(len(piece)):
+            for x in range(len(piece[i])):
+                if (piece[i][x] == True):
+                    if (data["start"][0] + i) >= data["col"]:
+                        stickPiece(data)
+                        newFallingPiece(data)
+                        drawFallingPiece(data)
+
+def offGrid(data):
+    piece = data["newFallingPiece"]
+    color = data["fallingPieceColor"]
+
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if (piece[i][x] == True):
+                if ((data["start"][0] + i),
+                    (data["start"][1] + x)) in data["stuckPieces"]:
+                    return True
+    return False
+
+def stickPiece(data):
+    piece = data["newFallingPiece"]
+    color = data["fallingPieceColor"]
+
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(piece[i][x] == True):
+                data["stuckPieces"][((data["start"][0] + i - 1), (data["start"][1] + x))] = color
+    board(data)
+    data["start"] = [0,4]
+
+def point(data):
+    board = data["board"]
+    col = data["col"]
+    row = data["row"]
+    boardList = [ ]
+    for m in range(1, col + 1):
+        boardList.append([ ])
+        for n in range(1, row + 1):
+            (boardList[(m - 1)]).append(board[(m, n)])
+    for j in range(len(boardList)):
+        if(not "white" in boardList[j]):
+            boardList.pop(j)
+            (boardList[:0]).append(data["newRow"])
+            data["score"] += 1
+    for i in range(len(boardList)):
+        for x in range(len(boardList[i])):
+            data["board"][((i+1), (x+1))] = boardList[i][x]
+            
+            
+    
+
+
+############################## Run Function ####################################
+
+
+def run(width=300, height=300):
+    def redrawAllWrapper(canvas, data):
+        canvas.delete(ALL)
+        redrawAll(canvas, data)
+        canvas.update()    
+    # def mousePressedWrapper(event, canvas, data):
+    #     mousePressed(event, data)
+    #     redrawAllWrapper(canvas, data)
+    def keyPressedWrapper(event, canvas, data):
+        keyPressed(event, data)
+        redrawAllWrapper(canvas, data)
+    def timerFiredWrapper(canvas, data):
+        timerFired(data)
+        point(data)
+        redrawAllWrapper(canvas, data)
+        canvas.after(data["timerDelay"], timerFiredWrapper, canvas, data)
+    data = dict()
+    data["width"] = width
+    data["height"] = height
+    data["timerDelay"] = 2000
+    init(data)
+    root = Tk()
+    canvas = Canvas(root, width=data["width"], height=data["height"])
+    canvas.pack()
+    canvas.xview_moveto(0)
+    canvas.yview_moveto(0)
+    board(data)
+    newFallingPiece(data)
+    start(data)
+    drawFallingPiece(data)
+    redrawAll(canvas, data)
+    timerFiredWrapper(canvas, data)
+    # root.bind("<Button-1>", lambda event:
+    #                         mousePressedWrapper(event, canvas, data))
+    root.bind("<Key>", lambda event:
+                            keyPressedWrapper(event, canvas, data))
+    root.mainloop()  
+    print("bye!")
+
+run(275, 400)
